@@ -63,11 +63,6 @@ def get_top_250_movies():
                 driver2.get(link)
                 try:
                     image = driver2.find_element(By.CSS_SELECTOR, 'img.ipc-image').get_attribute('src')
-                    # Correction du lien d'image s'il est relatif
-                    if image and image.startswith("//"):
-                        image = "https:" + image
-                    elif image and image.startswith("/"):
-                        image = "https://www.imdb.com" + image
                 except Exception:
                     image = None
                 # Genre (encore plus robuste)

@@ -34,14 +34,14 @@ def parse_duration(d):
     return None
 
 def get_poster_url(title, year=None):
-    api_key = "demo"  # Remplacez par votre clé OMDb si vous en avez une
+    api_key = "demo"  
     url = f"http://www.omdbapi.com/?t={title}&apikey={api_key}"
     if year:
         url += f"&y={year}"
     try:
         r = requests.get(url)
         data = r.json()
-        if data.get('Poster') and data['Poster'] != 'N/A':
+        if (data.get('Poster') and data['Poster'] != 'N/A'):
             return data['Poster']
     except Exception:
         pass
@@ -86,7 +86,6 @@ if 'year' in df.columns:
     df = df[df['year'].notnull() & (df['year'] != 'N/A')]
     df['year'] = df['year'].astype(int)
 
-# Harmonisation des noms de colonnes pour correspondre au code
 rename_dict = {
     'genre': 'genres',
     'resume': 'synopsis',
@@ -97,12 +96,11 @@ rename_dict = {
 }
 df.rename(columns=rename_dict, inplace=True)
 
-# --- Favoris (stockés en session Streamlit) ---
+# --- Favoris ---
 if 'favoris' not in st.session_state:
     st.session_state['favoris'] = set()
 
-# --- UI ---
-st.title("🎬 IMDb Top 250 - Dashboard interactif avancé")
+st.title("🎬 IMDb Top 250 - Dashboard interactif ")
 
 # Bande déroulante (marquee) avec tous les titres de films
 titres = df['title'].dropna().unique()
@@ -162,7 +160,7 @@ with colB:
 st.markdown("**Suggestions de films similaires :**")
 sim = get_similar_movies(film, df)
 if not sim.empty:
-    sim['year'] = sim['year'].astype(int)  # Force l'affichage sans séparateur de milliers
+    sim['year'] = sim['year'].astype(int) 
     st.dataframe(sim[['title','year','rating','genres']].head(5))
 else:
     st.info("Aucune suggestion disponible.")
@@ -175,7 +173,7 @@ if st.session_state['favoris']:
 
 # --- PAGE ANALYSES ---
 st.markdown("---")
-st.header("📊 Analyses et visualisations avancées")
+st.header("📊 Analyses et visualisations ")
 
 # Statistiques globales
 col1, col2, col3 = st.columns(3)
@@ -203,12 +201,7 @@ if 'year' in df.columns:
     df['decade'] = (df['year']//10)*10
     fig_decade = px.bar(df['decade'].value_counts().sort_index(), labels={'value':'Nombre de films','index':'Décennie'}, title='Répartition par décennie')
     st.plotly_chart(fig_decade, use_container_width=True)
-if 'genres' in df.columns:
-    genre_ratings = df[['genres','rating']].dropna().copy()
-    genre_ratings = genre_ratings.assign(genre=genre_ratings['genres'].str.split(',')).explode('genre')
-    genre_ratings['genre'] = genre_ratings['genre'].str.strip()
-    fig_box = px.box(genre_ratings, x='genre', y='rating', title='Boxplot des notes par genre')
-    st.plotly_chart(fig_box, use_container_width=True)
+
 if 'genres' in df.columns and 'duration' in df.columns:
     genre_duration = df[['genres','duration']].dropna().copy()
     genre_duration = genre_duration.assign(genre=genre_duration['genres'].str.split(',')).explode('genre')
@@ -268,11 +261,7 @@ if 'synopsis' in df.columns:
     st.write(f"*{longest['title']}* ({longest['year']}) - {longest['synopsis_length']} caractères")
     st.info(longest['synopsis'])
 
-# --- DIAGNOSTIC AVANT VALEUR AJOUTÉE ---
-st.markdown('---')
-st.write('**Diagnostic DataFrame avant analyses avancées :**')
-st.write(f'Colonnes disponibles : {list(df.columns)}')
-st.write(f'Nombre de lignes : {len(df)}')
+
 if df.empty:
     st.warning('Le DataFrame est vide à ce stade.')
 else:
@@ -280,10 +269,10 @@ else:
     if missing_cols:
         st.warning(f'Colonnes manquantes pour les analyses avancées : {missing_cols}')
 
-# --- VALEUR AJOUTÉE : Analyses avancées personnalisées ---
+# --- PAGE ANALYSES CINÉMATOGRAPHIQUES ---
 st.markdown("---")
 
-st.header("✨ Valeur Ajoutée : Analyses cinématographiques avancées")
+st.header("Analyses cinématographiques ")
 
 # 1. Tendances cinématographiques par genre (évolution par décennie)
 if 'genres' in df.columns and 'year' in df.columns:
@@ -314,25 +303,7 @@ if 'genres' in df.columns and 'rating' in df.columns:
     genre_ratings['genre'] = genre_ratings['genre'].str.strip()
     perf = genre_ratings.groupby('genre').agg({'rating':'mean', 'genre':'count'}).rename(columns={'rating':'Note moyenne','genre':'Nombre de films'}).sort_values('Note moyenne',ascending=False)
     st.dataframe(perf)
-    fig_perf = px.scatter(perf, x='Nombre de films', y='Note moyenne', text=perf.index, title='Genres : Note moyenne vs Volume')
-    st.plotly_chart(fig_perf, use_container_width=True)
-
-# 3. Analyse des critiques utilisateurs (sentiment des synopsis par genre)
-if 'genres' in df.columns and 'synopsis' in df.columns:
-    st.subheader("Analyse de sentiment des synopsis par genre")
-    st.markdown(
-        """
-        _Ce graphique présente le score moyen de sentiment des synopsis pour chaque genre. Un score positif indique des synopsis globalement positifs, un score négatif indique des synopsis plus sombres ou négatifs._
-        """
-    )
-    df['sentiment'] = df['synopsis'].apply(sentiment_synopsis)
-    genre_sent = df[['genres','sentiment']].dropna().copy()
-    genre_sent = genre_sent.assign(genre=genre_sent['genres'].str.split(',')).explode('genre')
-    genre_sent['genre'] = genre_sent['genre'].str.strip()
-    sent_mean = genre_sent.groupby('genre')['sentiment'].mean().sort_values(ascending=False)
-    fig_sent = px.bar(sent_mean, x=sent_mean.index, y=sent_mean.values, labels={'x':'Genre','y':'Sentiment moyen'}, title='Sentiment moyen des synopsis par genre')
-    st.plotly_chart(fig_sent, use_container_width=True)
-
+ 
 # 4. Carrières des acteurs et réalisateurs
 if 'actors' in df.columns or 'director' in df.columns:
     st.subheader("Étude de carrière : acteur ou réalisateur")
@@ -435,6 +406,22 @@ if 'genres' in df.columns and 'synopsis' in df.columns:
     st.dataframe(sent_mean.head(5))
     st.write("**Top 5 genres les plus négatifs :**")
     st.dataframe(sent_mean.tail(5))
+    # Ajout du barplot pour les 5 genres les plus positifs et négatifs
+    
+    top5_pos = sent_mean.head(5)
+    top5_neg = sent_mean.tail(5)
+    sent_plot = pd.concat([top5_pos, top5_neg])
+    st.subheader("Analyse de sentiment des synopsis par genre")
+    st.markdown(
+        """
+        _Ce graphique présente le score moyen de sentiment des synopsis pour chaque genre. Un score positif indique des synopsis globalement positifs, un score négatif indique des synopsis plus sombres ou négatifs._
+        """
+    )
+    fig_sent_ext = px.bar(sent_plot, x=sent_plot.index, y=sent_plot.values, color=sent_plot.values,
+                         color_continuous_scale=[(0, "red"), (0.5, "lightgrey"), (1, "green")],
+                         labels={'x':'Genre','y':'Sentiment moyen'},
+                         title='Top 5 genres les plus positifs et négatifs (sentiment synopsis)')
+    st.plotly_chart(fig_sent_ext, use_container_width=True)
 
 # Filtres dynamiques
 st.sidebar.header("Filtres dynamiques")
@@ -470,4 +457,4 @@ st.download_button("Exporter en Excel", excel_buffer.getvalue(), "imdb_top250_fi
 st.sidebar.markdown("---")
 st.sidebar.write("🌗 Pour le mode sombre/clair, utilisez les options de Streamlit dans le menu principal (en haut à droite)")
 
-st.success("Dashboard ultra-complet prêt à l'emploi ! Pour toute fonctionnalité avancée supplémentaire, demandez-moi.")
+st.success("Dashboard présentant quelques analyses sur le Top 250 IMDb.")
