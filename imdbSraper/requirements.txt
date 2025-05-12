@@ -1,3 +1,9 @@
 selenium
 pymongo
 dnspython
+flask
+streamlit
+pandas
+plotly
+seaborn
+wordcloud

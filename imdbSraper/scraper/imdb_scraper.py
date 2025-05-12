@@ -63,6 +63,11 @@ def get_top_250_movies():
                 driver2.get(link)
                 try:
                     image = driver2.find_element(By.CSS_SELECTOR, 'img.ipc-image').get_attribute('src')
+                    # Correction du lien d'image s'il est relatif
+                    if image and image.startswith("//"):
+                        image = "https:" + image
+                    elif image and image.startswith("/"):
+                        image = "https://www.imdb.com" + image
                 except Exception:
                     image = None
                 # Genre (encore plus robuste)
@@ -74,14 +79,18 @@ def get_top_250_movies():
                         genre = ', '.join([g.text for g in driver2.find_elements(By.CSS_SELECTOR, 'a.ipc-chip__text')])
                 except Exception:
                     genre = None
-                # Résumé (plus robuste)
+                # Résumé (encore plus robuste)
                 try:
-                    resume = driver2.find_element(By.CSS_SELECTOR, 'span[data-testid="plot-l"]').text
+                    # Essaye tous les data-testid possibles pour le résumé
+                    for testid in ["plot-l", "plot-xl", "plot-xs_to_m"]:
+                        try:
+                            resume = driver2.find_element(By.CSS_SELECTOR, f'span[data-testid="{testid}"]').text
+                            if resume:
+                                break
+                        except Exception:
+                            resume = None
                 except Exception:
-                    try:
-                        resume = driver2.find_element(By.CSS_SELECTOR, 'span[data-testid="plot-xl"]').text
-                    except Exception:
-                        resume = None
+                    resume = None
                 # Réalisateur (plus robuste)
                 try:
                     realisateur = ', '.join([
